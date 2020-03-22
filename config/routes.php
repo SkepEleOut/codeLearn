@@ -176,7 +176,7 @@ $app->group('/auth', function () {
 $app->group('/api', function () {
     //API
     $this->post('/login', App\Controllers\ApiController::class . ':login');
-    $this->post('/register', App\Controllers\ApiController::class . ':regster');
+    $this->post('/register', App\Controllers\ApiController::class . ':register');
     $this->get('/sendPhoneCode', App\Controllers\ApiController::class . ':sendPhoneCode');
     $this->get('/getUserInfo', App\Controllers\ApiController::class . ':getUserInfo');
     $this->get('/getNodeList', App\Controllers\ApiController::class . ':getNodeList');

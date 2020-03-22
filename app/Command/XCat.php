@@ -203,7 +203,10 @@ class XCat
             // do reg user
             $user = new User();
             $user->user_name = 'admin';
+            $user->phone = "18888888888";
             $user->email = $email;
+            $user->valid = 1899523839;
+            $user->invite_code = "SD453F2G";
             $user->pass = Hash::passwordHash($passwd);
             $user->passwd = Tools::genRandomChar(6);
             $user->port = Tools::getLastPort() + 1;

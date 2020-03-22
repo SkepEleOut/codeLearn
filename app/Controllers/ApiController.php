@@ -21,11 +21,11 @@ use App\Models\EmailVerify;
 use App\Models\Node;
 use App\Models\Shop;
 use App\Models\Ann;
+use App\Models\PhoneMessage;
 use App\Utils\GA;
 use App\Utils\Geetest;
 use App\Utils\TelegramSessionManager;
 use App\Utils\Mcrypt;
-use Cache;
 
 /**
  *  ApiController
@@ -126,28 +126,19 @@ class ApiController extends BaseController
         //邀请码
         $code = $request->getParam('invite_code');
         $code = trim($code);
-        //邀请码是否有效，无效则略过
-        $inviteUser = User::where('invite_code', $code)->first();
-        $userValid = $_SERVER['REQUEST_TIME'];
-        if($inviteUser){
-            //奖励时间为1天
-            $bounsDate = 3600 * 24 * 1;
-            $userValid += $bounsDate;
-            //邀请人增加时间
-            $inviteUserNewValid = intval($inviteUser['valid']) + $bounsDate;
-            User::where('invite_code', $code)->update(['valid' => $inviteUserNewValid]);
-        }
-
+    
         //验证手机
-        $_phone = Cache::get('phone');
-        $_code = Cache::get('code');
-
-        if($_phone == null || $_code == null){
+        $phoneMessage = PhoneMessage::orderBy('valid', 'DESC')->where('phone', '=', $phone)->first();
+        if(!$phoneMessage){
             return $this->echoJson($response, [
                 'code' => 1,
-                'msg' => '验证码已过期，请重新发送'
+                'msg' => '手机号码不正确'
             ]);
         }
+        $_phone = $phoneMessage->phone;
+        $_message = $phoneMessage->message;
+        $_type = $phoneMessage->type;
+        $_validate = $phoneMessage->valid;
 
         if($_phone != $phone){
             return $this->echoJson($response, [
@@ -156,10 +147,17 @@ class ApiController extends BaseController
             ]);
         }
 
-        if($_code != $code){
+        if($_message != $message){
             return $this->echoJson($response, [
                 'code' => 1,
                 'msg' => '验证码错误'
+            ]);
+        }
+
+        if($_SERVER['REQUEST_TIME'] >  $_validate){
+            return $this->echoJson($response, [
+                'code' => 1,
+                'msg' => '验证码过期，请重新获取'
             ]);
         }
 
@@ -195,6 +193,18 @@ class ApiController extends BaseController
                 'code' => 1,
                 'msg' => '用户已存在'
             ]);
+        }
+
+        //邀请码是否有效，无效则略过
+        $inviteUser = User::where('invite_code', $code)->first();
+        $userValid = $_SERVER['REQUEST_TIME'];
+        if($inviteUser){
+            //奖励时间为1天
+            $bounsDate = 3600 * 24 * 1;
+            $userValid += $bounsDate;
+            //邀请人增加时间
+            $inviteUserNewValid = intval($inviteUser['valid']) + $bounsDate;
+            User::where('invite_code', $code)->update(['valid' => $inviteUserNewValid]);
         }
 
         $user->user_name = $antiXss->xss_clean($name);
@@ -242,8 +252,6 @@ class ApiController extends BaseController
         $user->ga_enable = 0;
 
         if ($user->save()) {
-            Cache::forget('phone');
-            Cache::forget('code');  
             return $this->echoJson($response, [
                 'code' => 0,
                 'msg' => '注册成功！'
@@ -478,13 +486,27 @@ class ApiController extends BaseController
     //发送手机验证码
     public function sendPhoneCode($request, $response){
         $url = 'https://106.ihuyi.com/webservice/sms.php?method=Submit';
-        $code = $this -> random(4,1);
+        $code = $this -> random(6,1);
         $account = 'C64536493';
         $apikey = 'b85528bda248afd312da86b9b804f02e ';
         $content = '您的验证码是'.$code.'，短信有效期五分钟。';
         $time = time();
-        $password = md5($account.$apikey.$phone.$content.$time);
         $phone = $request->getParam('phone');
+        $type = $request->getParam('type') == null ? 0 : $request->getParam('type');
+        $type = intval(trim($type));
+        if($phone == null){
+            return $this->echoJson($response, [
+                'code' => 1,
+                'msg' => '手机号码不能为空'
+            ]);
+        }
+        if($type < 0){
+            return $this->echoJson($response, [
+                'code' => 1,
+                'msg' => '参数错误'
+            ]);
+        }
+        $password = md5($account.$apikey.$phone.$content.$time);
         $data = [
             'account' => $account,
             'password' => $password,
@@ -512,12 +534,17 @@ class ApiController extends BaseController
             ]);
         }
         if($res['SubmitResult']['code'] == 2 ){
-            Cache::put('phone', $phone, 300);
-            Cache::put('code', $code, 300);
-            return $this->echoJson($response, [
-                'code' => 0,
-                'msg' => '成功'
-            ]);
+            $phoneMessage = new PhoneMessage();
+            $phoneMessage->phone = $phone;
+            $phoneMessage->code = $code;
+            $phoneMessage->type = $type;
+            $phoneMessage->valid = $_SERVER['REQUEST_TIME'] + 300;
+            if($phoneMessage->save()){
+                return $this->echoJson($response, [
+                    'code' => 0,
+                    'msg' => '成功'
+                ]);
+            }
         }
     }
 
