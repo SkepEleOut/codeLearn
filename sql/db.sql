@@ -11,7 +11,7 @@
  Target Server Version : 50726
  File Encoding         : 65001
 
- Date: 18/03/2020 19:51:36
+ Date: 22/03/2020 19:09:59
 */
 
 SET NAMES utf8mb4;
@@ -228,7 +228,7 @@ CREATE TABLE `login_ip`  (
   `datetime` bigint(20) NOT NULL,
   `type` int(11) NOT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 14 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 15 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for payback
@@ -257,6 +257,19 @@ CREATE TABLE `paylist`  (
   `datetime` bigint(20) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for phone_message
+-- ----------------------------
+DROP TABLE IF EXISTS `phone_message`;
+CREATE TABLE `phone_message`  (
+  `id` int(50) NOT NULL AUTO_INCREMENT,
+  `phone` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '手机号',
+  `message` varchar(6) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '验证码',
+  `type` int(3) NOT NULL COMMENT '1: 注册 2：找回密码',
+  `valid` int(20) NOT NULL COMMENT '过期时间',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for radius_ban

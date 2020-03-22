@@ -208,6 +208,9 @@ class ApiController extends BaseController
         }
 
         $user->user_name = $antiXss->xss_clean($name);
+        $user->phone = $phone;
+        $user->valid = $userValid;
+        $user->invite_code = createInviteCode();
         $user->email = (uniqid(rand(1000,9999),true)).'@sspanel.com';
         $user->pass = Hash::passwordHash($passwd);
         $user->passwd = Tools::genRandomChar(6);
